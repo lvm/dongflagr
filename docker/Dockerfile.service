@@ -1,0 +1,30 @@
+FROM python:3.10-alpine
+LABEL author="mauro@sdf.org"
+
+ARG UID=1000
+ARG GID=1000
+
+ENV PYTHONUNBUFFERED 1
+ENV C_FORCE_ROOT true
+ENV LANG C.UTF-8
+ENV USER user
+ENV HOME /app
+ENV HOME_PROTO $HOME/protobufs
+
+WORKDIR $HOME
+
+COPY protobufs $HOME_PROTO
+
+RUN pip install -U pip grpcio-tools~=1.47.0 \
+  && addgroup -S $USER -g $GID \
+  && adduser -S -G $USER -u $UID -h $HOME $USER \
+  && python3 -m grpc_tools.protoc \
+          -I $HOME/protobufs --python_out=$HOME \
+           --grpc_python_out=$HOME $HOME_PROTO/echo.proto
+
+COPY service/server.py $HOME/server.py
+
+EXPOSE 50051
+USER $USER
+
+CMD python3 $HOME/server.py

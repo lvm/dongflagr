@@ -1,0 +1,48 @@
+version: '3.9'
+
+services:
+  echo-service:
+    image: echo-service
+    container_name: echo-service
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile.service
+    networks:
+      dongflagr-net: {}
+  echo-api:
+    image: echo-api
+    container_name: echo-api
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile.api
+    volumes:
+      - .:/vol
+    environment:
+      - PORT_APP=5000
+      - WORKERS=5
+      - THREADS=10
+      - ECHO_HOST=echo-service
+    depends_on:
+      - echo-service
+    networks:
+      dongflagr-net: {}
+  echo-webserver:
+    image: echo-webserver
+    container_name: echo-webserver
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile.nginx
+    depends_on:
+      - echo-api
+    ports:
+      - 80:80
+    networks:
+      dongflagr-net: {}
+
+networks:
+  dongflagr-net:
+    driver: bridge
+    name: dongflagr-net
